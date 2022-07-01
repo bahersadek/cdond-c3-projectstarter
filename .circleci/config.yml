@@ -7,6 +7,7 @@ commands:
       workflow_id:
         type: string
     steps:
+      - run: sleep 600;
       - run:
           name: Destroy environments
           when: on_fail
