@@ -311,7 +311,7 @@ jobs:
           keys: [backend-build]
 
       - run:
-          name: Install dependencies
+          name: Install dependencies new
           command: |
             apk add --update ansible openssh-client tar gzip curl nodejs zip
             pip install awscli
