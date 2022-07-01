@@ -313,7 +313,7 @@ jobs:
       - run:
           name: Install dependencies new
           command: |
-            apk add --update ansible openssh-client tar gzip curl nodejs zip
+            apk add --update ansible openssh-client tar gzip curl nodejs zip npm
             pip install awscli
             cd backend
             npm install
@@ -465,14 +465,14 @@ workflows:
       - configure-infrastructure:
           requires: [deploy-infrastructure-backend]
       - run-migrations:
-          requires: [configure-infrastructure]
-      - deploy-frontend:
+          requires: [configure-infrastructure]     
+      - deploy-backend:
           requires: [run-migrations]
           filters:
             branches:
               only: [master]
-      - deploy-backend:
-          requires: [run-migrations, deploy-frontend]
+      - deploy-frontend:
+          requires: [run-migrations, deploy-backend]
           filters:
             branches:
               only: [master]
