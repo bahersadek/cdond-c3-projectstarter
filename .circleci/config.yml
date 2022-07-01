@@ -109,10 +109,9 @@ jobs:
       - run:
             name: Front-end Scan
             command: |
-                cd backend
-                npm install
-                npm audit fix --force
-                #npm audit --audit-level=critical
+                cd frontend
+                npm i
+                npm audit fix --audit-level=critical --force
 
   scan-backend:
     docker:
@@ -126,8 +125,7 @@ jobs:
             command: |
                 cd backend
                 npm install
-                npm audit fix --force
-                #npm audit --audit-level=critical
+                npm audit fix --audit-level=critical --force
 
   deploy-infrastructure-backend:
     docker:
@@ -454,7 +452,7 @@ workflows:
             branches:
               only: [master]
       - smoke-test:
-          requires: [deploy-infrastructure-backend, deploy-infrastructure-frontend]
+          requires: [deploy-frontend, deploy-backend]
           filters:
             branches:
               only: [master]
