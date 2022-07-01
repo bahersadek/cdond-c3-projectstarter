@@ -173,7 +173,7 @@ jobs:
           fingerprints: ["0c:27:1f:7c:b3:0f:42:3a:56:99:72:a4:79:b1:b4:94"] 
 
       - attach_workspace:
-          at: /tmp/.circleci/ansible
+          at: .circleci/ansible
 
       - run:
           name: Install dependencies
