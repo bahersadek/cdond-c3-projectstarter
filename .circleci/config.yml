@@ -302,7 +302,7 @@ jobs:
           fingerprints: ["0c:27:1f:7c:b3:0f:42:3a:56:99:72:a4:79:b1:b4:94"]
 
       - attach_workspace:
-          at: ~/
+          at: .circleci/ansible
       
       - restore_cache:
           keys: [backend-build]
@@ -330,6 +330,8 @@ jobs:
             export TYPEORM_MIGRATIONS_DIR=./migrations
             export TYPEORM_ENTITIES=./modules/domain/**/*.entity{.ts,.js}
             export TYPEORM_MIGRATIONS=./migrations/*.ts
+
+            
             cd .circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
