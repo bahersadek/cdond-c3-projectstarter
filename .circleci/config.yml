@@ -78,7 +78,7 @@ jobs:
                 cd backend
                 npm install
                 npm audit fix --force
-                npm audit --audit-level=critical
+                #npm audit --audit-level=critical
 
   scan-backend:
     docker:
@@ -93,8 +93,63 @@ jobs:
                 cd backend
                 npm install
                 npm audit fix --force
-                npm audit --audit-level=critical
+                #npm audit --audit-level=critical
 
+  deploy-infrastructure-backend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Ensure back-end infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/backend.yml \
+              --tags project=udapeople \
+              --stack-name udapeople-backend-prod-${CIRCLE_WORKFLOW_ID:0:7} \
+              --parameter-overrides ID="prod-${CIRCLE_WORKFLOW_ID:0:7}"  \
+              --profile default
+
+      - run:
+          name: Save backend URL and IP (for ansible)
+          command: |
+            BACKEND_AWS_PUBLIC_IP=$(aws ec2 describe-instances \
+              --filters "Name=tag:Name,Values=backend-prod-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --output text)
+            echo "http://$BACKEND_AWS_PUBLIC_IP:3030" >> .circleci/outputs/backend_url.txt
+            echo "[all]" >> .circleci/ansible/inventory.txt
+            echo "$BACKEND_AWS_PUBLIC_IP" >> .circleci/ansible/inventory.txt
+            cat .circleci/outputs/backend_url.txt
+      
+      - run: yum -y install tar gzip
+      
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/outputs/backend_url.txt
+            - project/.circleci/ansible/inventory.txt
+      
+      - destroy_environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+    
+  deploy-infrastructure-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Ensure front-end infrastructure exist
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --tags project=udapeople \
+              --stack-name udapeople-frontend-prod-${CIRCLE_WORKFLOW_ID:0:7} \
+              --parameter-overrides ID="prod-${CIRCLE_WORKFLOW_ID:0:7}"  
+
+      - destroy_environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+    
 
 workflows:
   default:
@@ -109,3 +164,13 @@ workflows:
           requires: [build-backend]
       - scan-frontend:
           requires: [build-frontend]
+      - deploy-infrastructure-backend:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [ master ]
+      - deploy-infrastructure-frontend:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [ master ]
