@@ -231,15 +231,22 @@ jobs:
             cat migrations_dump.txt
 
       - run:
+          name: update certificates
+          command: |
+            sudo apt-get update && sudo apt-get install -y ca-certificates
+            update-ca-certificates -f -v
+
+
+      - run:
           name: Send migration results to memstash
           command: |
             if grep -q "has been executed successfully." backend/migrations_dump.txt
             then
                 echo "Migration Success"
-                curl https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
+                curl -k https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
             else
                 echo "Migration Failed"
-                curl https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '0'              
+                curl -k https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '0'              
             fi
 
       - revert-migrations
