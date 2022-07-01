@@ -297,6 +297,9 @@ jobs:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
+      - install_awscli
+      - install_ansible
+      - install_nodejs
       - add_ssh_keys:
           fingerprints: ["0c:27:1f:7c:b3:0f:42:3a:56:99:72:a4:79:b1:b4:94"]
 
@@ -309,26 +312,28 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible
-            apk add --update npm
-            apk add --update tar
+            cd backend
+            npm install
       
       - run:
-          name: Back-end zip
+          name: Package Back-end
           command: |
-            cd backend
-            npm i
-            npm run build
+            cd backend            
+            npm run build            
+            tar -czf artifact.tar.gz dist/* package*
             cd ..
-            tar -C backend -czvf artifact.tar.gz
+            cp backend/artifact.tar.gz .circleci/ansible/roles/deploy/files
 
       - run:
           name: Deploy backend
           command: |
+            export TYPEORM_MIGRATIONS_DIR=./migrations
+            export TYPEORM_ENTITIES=./modules/domain/**/*.entity{.ts,.js}
+            export TYPEORM_MIGRATIONS=./migrations/*.ts
             cd .circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
-            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
+            ansible-playbook -i inventory.txt deploy-backend.yml
       
       - revert-migrations
       - destroy_environment:
