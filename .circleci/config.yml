@@ -6,8 +6,7 @@ commands:
     parameters:
       workflow_id:
         type: string
-    steps:
-      - run: sleep 600;
+    steps:      
       - run:
           name: Destroy environments
           when: on_fail
@@ -146,26 +145,6 @@ jobs:
             - project/.circleci/outputs/backend_url.txt
             - project/.circleci/ansible/inventory.txt
       
-      - destroy_environment:
-          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
-    
-  deploy-infrastructure-frontend:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - checkout
-      - run:
-          name: Ensure front-end infrastructure exist
-          command: |
-            aws cloudformation deploy \
-              --template-file .circleci/files/frontend.yml \
-              --tags project=udapeople \
-              --stack-name udapeople-frontend-prod-${CIRCLE_WORKFLOW_ID:0:7} \
-              --parameter-overrides ID="prod-${CIRCLE_WORKFLOW_ID:0:7}"  
-
-      - destroy_environment:
-          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
-    
 
 workflows:
   default:
@@ -181,11 +160,6 @@ workflows:
       - scan-frontend:
           requires: [build-frontend]
       - deploy-infrastructure-backend:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-          filters:
-            branches:
-              only: [ master ]
-      - deploy-infrastructure-frontend:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
