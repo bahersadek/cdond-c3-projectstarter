@@ -117,14 +117,15 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
+      - run: yum -y install tar gzip
       - run:
           name: Ensure back-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople \
-              --stack-name udapeople-backend-prod-${CIRCLE_WORKFLOW_ID:0:7} \
-              --parameter-overrides ID="prod-${CIRCLE_WORKFLOW_ID:0:7}" 
+              --parameter-overrides ID="prod-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --stack-name udapeople-backend-prod-${CIRCLE_WORKFLOW_ID:0:7}
 
       - run:
           name: Save backend URL and IP (for ansible)
@@ -136,9 +137,7 @@ jobs:
             echo "http://$BACKEND_AWS_PUBLIC_IP:3030" >> .circleci/outputs/backend_url.txt
             echo "[all]" >> .circleci/ansible/inventory.txt
             echo "$BACKEND_AWS_PUBLIC_IP" >> .circleci/ansible/inventory.txt
-            cat .circleci/outputs/backend_url.txt
-      
-      - run: yum -y install tar gzip
+            cat .circleci/outputs/backend_url.txt      
       
       - persist_to_workspace:
           root: ~/
