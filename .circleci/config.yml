@@ -265,27 +265,31 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update
+            apk add --update curl nodejs npm ansible zip            
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 
             unzip awscliv2.zip 
             sudo ./aws/install
 
-      - attach_workspace:
-          at: ~/
+      - run:
+          name: Install dependencies p2
+          command: |
+            cd frontend
+            npm install
 
       - run:
           name: Get backend url
           command: |
-            export BACKEND_IP=$(tail -1 ~/project/.circleci/ansible/inventory.txt)
-            export API_URL="http://${BACKEND_IP}:3030"
-            echo "${API_URL}"
-            cd frontend
-            npm i
-            npm run build
+            BACKEND_PUBLIC_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-prod-${CIRCLE_WORKFLOW_ID:0:7}" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
+            
+            echo "API_URL=http://${BACKEND_PUBLIC_IP}:3030" >> frontend/.env
+            cat frontend/.env
 
       - run:
           name: Deploy frontend objects
           command: |
-            aws s3 sync frontend/dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}
+            cd frontend
+            npm run build
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
       
       - revert-migrations
       - destroy_environment:
@@ -331,7 +335,7 @@ jobs:
             export TYPEORM_ENTITIES=./modules/domain/**/*.entity{.ts,.js}
             export TYPEORM_MIGRATIONS=./migrations/*.ts
 
-            
+
             cd .circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt
