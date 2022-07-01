@@ -132,7 +132,7 @@ jobs:
           command: |
             BACKEND_AWS_PUBLIC_IP=$(aws ec2 describe-instances \
               --filters "Name=tag:Name,Values=udapeople-backend-prod-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --query "Reservations[*].Instances[*].PublicIpAddress" \
               --output text)
             echo "http://$BACKEND_AWS_PUBLIC_IP:3030" >> .circleci/outputs/backend_url.txt
             echo "[all]" >> .circleci/ansible/inventory.txt
@@ -164,7 +164,49 @@ jobs:
 
       - destroy_environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
-    
+
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - run:
+          name: SSH or Git CLI client 
+          command: |
+              apk add --update git openssh-client
+
+      - add_ssh_keys:
+          fingerprints: ["0c:27:1f:7c:b3:0f:42:3a:56:99:72:a4:79:b1:b4:94"] 
+
+      - attach_workspace:
+          at: /tmp/.circleci/ansible
+
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible openssh-client tar gzip curl
+
+      - run:
+          name: Install AWS-CLI
+          command: |
+            pip install awscli 
+
+      - run:
+          name: Configure server
+          command: |
+            echo $SSH_KEY
+            echo "------ before ------"
+            cat ~/.ssh/known_hosts
+            cd ~/project/.circleci/ansible
+            cat inventory.txt
+            ansible-playbook -i inventory.txt configure-server.yml
+            echo "------ after ------"
+            cat ~/.ssh/known_hosts
+
+      - destroy-environment:
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+      # Here's where you will add some code to rollback on failure      
+   
 
 workflows:
   default:
@@ -189,3 +231,5 @@ workflows:
           filters:
             branches:
               only: [ master ]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure-backend]
