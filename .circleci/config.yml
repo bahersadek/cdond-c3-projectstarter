@@ -387,34 +387,34 @@ jobs:
       - destroy_environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
 
-cleanup:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - run:
-          name: install tar utilities
-          command: |
-            yum install -y tar gzip
+  cleanup:
+      docker:
+        - image: amazon/aws-cli
+      steps:
+        - run:
+            name: install tar utilities
+            command: |
+              yum install -y tar gzip
 
-      - attach_workspace:
-          at: ~/
+        - attach_workspace:
+            at: ~/
 
-      - run:
-          name: Get old stack workflow id
-          command: |
-            export OldWorkflowID=$(cat ~/project/oldWorkflowId.txt)
-            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
-            --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
-            echo "$OldWorkflowID"
-            echo "$STACKS"
-            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
-            then
-              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
-              aws s3 rb s3://udapeople-${OldWorkflowID} --force
-              aws cloudformation delete-stack --stack-name "backend-${OldWorkflowID}"
-              aws cloudformation delete-stack --stack-name "frontend-${OldWorkflowID}"
-              echo "Stacks deleted succesfully"
-            fi
+        - run:
+            name: Get old stack workflow id
+            command: |
+              export OldWorkflowID=$(cat ~/project/oldWorkflowId.txt)
+              export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+              --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
+              echo "$OldWorkflowID"
+              echo "$STACKS"
+              if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+              then
+                aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+                aws s3 rb s3://udapeople-${OldWorkflowID} --force
+                aws cloudformation delete-stack --stack-name "backend-${OldWorkflowID}"
+                aws cloudformation delete-stack --stack-name "frontend-${OldWorkflowID}"
+                echo "Stacks deleted succesfully"
+              fi
 
 workflows:
   default:
