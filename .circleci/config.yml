@@ -173,7 +173,7 @@ jobs:
           fingerprints: ["0c:27:1f:7c:b3:0f:42:3a:56:99:72:a4:79:b1:b4:94"] 
 
       - attach_workspace:
-          at: .circleci/ansible
+          at: ~/
 
       - run:
           name: Install dependencies
@@ -191,9 +191,9 @@ jobs:
             echo $SSH_KEY
             echo "------ before ------"
             cat ~/.ssh/known_hosts
-            cd ~/project/.circleci/ansible
+            cd .circleci/ansible
             cat inventory.txt
-            ansible-playbook -i inventory.txt configure-server.yml
+            ANSIBLE_HOST_KEY_CHECKING=0 ansible-playbook -i inventory.txt configure-server.yml
             echo "------ after ------"
             cat ~/.ssh/known_hosts
 
