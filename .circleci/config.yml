@@ -264,8 +264,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update
-            apk add --update curl nodejs npm ansible zip            
+            sudo apt-get update                       
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" 
             unzip awscliv2.zip 
             sudo ./aws/install
@@ -472,7 +471,7 @@ workflows:
             branches:
               only: [master]
       - deploy-backend:
-          requires: [run-migrations]
+          requires: [run-migrations, deploy-frontend]
           filters:
             branches:
               only: [master]
