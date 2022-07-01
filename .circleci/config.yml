@@ -25,7 +25,7 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl --insecure https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7})
+            SUCCESS=$(curl -k https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7})
             if(( $SUCCESS==1 )); 
             then
               cd ~/project/backend
@@ -240,7 +240,7 @@ jobs:
       - run:
           name: Send migration results to memstash
           command: |
-            if grep -q "has been executed successfully." backend/migrations_dump.txt
+            if [grep -q "has been executed successfully." backend/migrations_dump.txt] or [grep -q "No migrations are pending" backend/migrations_dump.txt]
             then
                 echo "Migration Success"
                 curl -k https://kvdb.io/DMcCNv176iSRE4g95XcETM/migration_${CIRCLE_WORKFLOW_ID:0:7}  -d '1'
@@ -316,12 +316,19 @@ jobs:
       - run:
           name: Back-end zip
           command: |
+            cd backend
+            npm i
+            npm run build
+            cd ..
             tar -C backend -czvf artifact.tar.gz
 
       - run:
           name: Deploy backend
           command: |
-            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/deploy-backend.yml -vvv
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml -vvv
       
       - revert-migrations
       - destroy_environment:
