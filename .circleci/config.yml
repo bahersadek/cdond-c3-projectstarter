@@ -453,17 +453,17 @@ jobs:
         - run:
             name: Get old stack workflow id
             command: |
-              export OldWorkflowID=$(cat ~/project/oldWorkflowId.txt)
+              export OldWorkflowID=$(curl -k https://kvdb.io/DMcCNv176iSRE4g95XcETM/old_workflow_id)
               export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
               --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
               echo "$OldWorkflowID"
               echo "$STACKS"
               if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
               then
-                aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
-                aws s3 rb s3://udapeople-${OldWorkflowID} --force
-                aws cloudformation delete-stack --stack-name "backend-${OldWorkflowID}"
-                aws cloudformation delete-stack --stack-name "frontend-${OldWorkflowID}"
+                aws s3 rm "s3://udapeople-prod-${OldWorkflowID}" --recursive
+                aws s3 rb s3://udapeople-prod-${OldWorkflowID} --force
+                aws cloudformation delete-stack --stack-name "udapeople-backend-prod-${OldWorkflowID}"
+                aws cloudformation delete-stack --stack-name "udapeople-frontend-prod-${OldWorkflowID}"
                 echo "Stacks deleted succesfully"
               fi
 
