@@ -366,6 +366,23 @@ jobs:
             BACKEND_PUBLIC_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-prod-${CIRCLE_WORKFLOW_ID:0:7}" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
             export API_URL="http://${BACKEND_PUBLIC_IP}:3030/api/status"
             echo "$API_URL"
+            
+            TRIES=60
+              FAILED=0
+              curl "${API_URL}/api/status" || FAILED=1
+              while [ $FAILED -eq 1 ]
+              do
+                  FAILED=0
+                  echo "Trying again"
+                  sleep 4
+                  curl "${API_URL}/api/status" || FAILED=1
+                  TRIES=$(( $TRIES - 1 ))
+                  if [ $TRIES -eq 0 ]
+                  then
+                      exit 1
+                  fi
+              done
+
             if curl -s $API_URL/api/status | grep "ok"
             then
               exit 0
