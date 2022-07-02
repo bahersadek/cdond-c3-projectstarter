@@ -348,40 +348,42 @@ jobs:
 
   smoke-test:
     docker:
-      - image: circleci/node:13.8.0 
+      - image: python:3.7-alpine3.11 
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            sudo apt install curl
+            apk add --update ansible openssh-client tar gzip curl nodejs zip npm
+            pip install awscli
 
       - attach_workspace:
           at: ~/
-
-      - run:
-          name: Get backend url
-          command: |
-            export BACKEND_IP=$(tail -1 ~/project/.circleci/ansible/inventory.txt)
-            export API_URL="http://${BACKEND_IP}:3030/api/status"
-            echo "${API_URL}"
       
       - run:
           name: Backend smoke test.
           command: |
-            curl ${API_URL}
+            BACKEND_PUBLIC_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=backend-prod-${CIRCLE_WORKFLOW_ID:0:7}" --query "Reservations[*].Instances[*].PublicIpAddress" --output text)
+            export API_URL="http://${BACKEND_PUBLIC_IP}:3030/api/status"
+            echo "$API_URL"
+            if curl -s $API_URL/api/status | grep "ok"
+            then
+              exit 0
+            else
+              exit 1
+            fi
 
       - run:
           name: Frontend smoke test.
           command: |
-            export FRONTEND_IP="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
+            export FRONTEND_WEBSITE="http://udapeople-prod-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
             if curl -s ${FRONTEND_IP} | grep "Welcome"
             then
               echo "pass"
-              exit 0
+              exit 1
             else
               echo "fail"
-              exit 1
+              exit 2
             fi
 
       - revert-migrations
