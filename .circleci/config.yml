@@ -394,13 +394,13 @@ jobs:
           name: Frontend smoke test.
           command: |
             export FRONTEND_WEBSITE="http://udapeople-prod-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
-            if curl -s ${FRONTEND_IP} | grep "Welcome"
+            if curl -s ${FRONTEND_WEBSITE} | grep "Welcome"
             then
               echo "pass"
-              exit 1
+              exit 0
             else
               echo "fail"
-              exit 2
+              exit 1
             fi
 
       - revert-migrations
@@ -410,20 +410,32 @@ jobs:
 
   cloudfront-update:
     docker:
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.11
     steps:
       - checkout
       - run:
-          name: Update cloudfront distribution
+          name: Install dependencies
           command: |
-            export OldWorkflowID=$(aws cloudformation \
+            apk add --update ansible openssh-client tar gzip curl nodejs zip npm
+            pip install awscli
+
+      - run:
+          name: Save old Workflow ID
+          command: |
+            export Old_Workflow_ID=$(aws cloudformation \
             list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
             --no-paginate --output text)
-            echo $OldWorkflowID > oldWorkflowId.txt
-            aws cloudformation update-stack \
-            --use-previous-template \
-            --stack-name udapeoplestack \
-            --parameters ParameterKey=WorkflowID,ParameterValue=${CIRCLE_WORKFLOW_ID:0:7}
+            echo "$Old_Workflow_ID"
+
+            curl -k https://kvdb.io/DMcCNv176iSRE4g95XcETM/old_workflow_id  -d "${Old_Workflow_ID}"
+      
+      - run:
+          name: Update CLoudfront Distribution
+          command: |
+            aws cloudformation deploy \
+            --template-file .circleci/files/cloudfront.yml \            
+            --stack-name InitialStack \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" 
 
       - revert-migrations
       - destroy_environment:
